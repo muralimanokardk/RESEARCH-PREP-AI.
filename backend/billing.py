@@ -61,10 +61,10 @@ PLAN_CATALOG = {
 # feature → per-tier quota (soft daily/monthly limits, 0 = disabled, big # = unlimited)
 FEATURE_QUOTAS = {
     "topic_gens_day":     {"free": 5,   "student": 20,  "pro": 200},
-    "paper_uploads_month":{"free": 3,   "student": 100, "pro": 1000},
+    "paper_uploads_month":{"free": 10,  "student": 100, "pro": 1000},
     "ppt_unlock":         {"free": 0,   "student": 0,   "pro": 999},
     "chat_msgs_day":      {"free": 5,   "student": 50,  "pro": 500},
-    "proposal_gens_month":{"free": 1,   "student": 20,  "pro": 200},
+    "proposal_gens_month":{"free": 3,   "student": 20,  "pro": 200},
 }
 
 
@@ -194,8 +194,8 @@ def build_router(db, get_current_user):
                     "amount_display": "₹0",
                     "features": [
                         "5 topic generations / day",
-                        "3 paper uploads / month",
-                        "1 proposal / month",
+                        "10 paper uploads / month",
+                        "3 proposals / month",
                         "Basic AI tutor",
                     ],
                 },

@@ -37,6 +37,14 @@ Bottom tabs (max 4): Home · Projects · Library · Profile. Modal presentations
 - PPT: `POST /ppt/generate`, `GET /projects/{id}/ppt`
 - Chat (RAG): `POST /chat`
 - Dashboard: `GET /dashboard/stats`
+- **Billing (Razorpay Subscriptions)**: `GET /billing/plans`, `GET /billing/status`, `POST /billing/subscription`, `POST /billing/cancel`, `POST /billing/webhook`
+
+## Monetization
+Razorpay Subscriptions (INR):
+- **Free**: 5 topic gens/day, 10 paper uploads/mo, 3 proposals/mo, basic chat
+- **Student ₹749/mo**: 20 topic gens/day, 100 paper uploads/mo, 20 proposals/mo, citations
+- **Research Pro ₹2,399/mo**: everything + PPT generator, Stella AI chat, priority Claude Sonnet 4.5
+Backend enforces limits with HTTP 402 (`quota_exceeded` / `upgrade_required`) which the app catches to route to `/paywall`.
 
 ## RAG Approach
 PyMuPDF extracts text → chunked (1200 chars, 150 overlap) → stored in `paper_chunks`. Retrieval uses keyword-overlap scoring (token frequency), top-k chunks fed to Claude as context. Lightweight, no external vector DB required.
