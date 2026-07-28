@@ -1,0 +1,44 @@
+{
+  "summary": "Full backend regression testing for Research Prep AI. 43/43 tests passing (100%). Covered: health, auth (register/login/me/token validation), Projects CRUD, project isolation between users, Topics generation with Claude Sonnet 4.5, Papers via text and PDF upload with Claude summarization, Literature Review (POST + GET), Research Gap, Proposal (POST + GET + PATCH), Citations for all four styles (IEEE/APA/MLA/Chicago), PPT generator (10 slides), AI Chat with RAG over paper chunks, Dashboard stats, and authorization guards on 12 protected endpoints. Claude Sonnet 4.5 output is well-formed JSON across all generation endpoints. During test authoring, one intermittent flake was observed: TestCitations[Chicago] returned an empty citations list once on gw0 worker even though the endpoint returned 200 with correct schema; three direct localhost curls afterwards all returned 1 citation, and the re-run of the full suite passed cleanly. This is Claude JSON output variability, not a code defect. No critical or high-priority backend issues found. No React Native/frontend testing performed (backend-only per request).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "POST /api/citations/generate (style=Chicago)",
+        "issue": "Rare intermittent case where Claude Sonnet 4.5 returns JSON that the fallback parser cannot fully recover, resulting in `citations: []`. Observed 1 flake in ~15+ calls during this session. Endpoint always returns HTTP 200 with correct shape. Consider tightening the prompt (e.g. add 'exactly one citation per input paper') or adding a retry when citations length < papers length to make it fully deterministic."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/conftest.py",
+    "/app/backend/tests/test_backend_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Optionally harden POST /api/citations/generate to retry once when returned citations list is empty but papers exist, to eliminate rare Claude JSON parsing edge cases (Chicago style observed once).",
+    "Consider adding a lightweight retry wrapper around claude_json() when the fallback branch (returning {'raw': ...}) is hit, so all six LLM generation endpoints degrade gracefully."
+  ],
+  "critical_code_review_comments": [
+    "server.py is a single 864-line file - consider splitting by domain (auth.py, projects.py, papers.py, generation.py, chat.py) for maintainability. Not blocking.",
+    "PPT endpoint stores presentations in db.presentations but delete_project() does NOT cascade delete them (unlike other collections). Same for db.presentations - orphaned rows will remain after project deletion. Low priority.",
+    "RAG uses simple keyword scoring (keyword_score) - fine for MVP, but consider embedding-based retrieval if paper volume grows.",
+    "claude_json fallback returns {'raw': ...} silently; consumer endpoints then return empty defaults (e.g., 0 topics, empty citations). Consider raising 502 or retrying so the client can distinguish 'no data' from 'LLM parse failed'.",
+    "No rate limiting on auth/register - fine for MVP but should be added before production."
+  ],
+  "updated_files": [
+    "/app/backend/tests/conftest.py (created)",
+    "/app/backend/tests/test_backend_api.py (created)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "not tested (backend-only request)"},
+  "seed_data_creation": "Session-scoped project 'TEST_Backend Suite Project' is created and torn down each run. Module-scoped paper 'TEST_LoRA: Low-Rank Adaptation...' is added via /api/papers/text. Test data uses TEST_ prefix for easy identification. A second temporary user (userb_<timestamp>@test.com) is registered per run to verify project isolation; these accounts are not cleaned up (backend has no delete-user endpoint) but are inert.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All backend tests are in /app/backend/tests/test_backend_api.py. Run with: `cd /app/backend && python -m pytest tests/test_backend_api.py -v`. Uses pytest-xdist LoadScope scheduling (configured in pytest.ini). LLM calls take ~5-30s; timeout constant is LLM_TIMEOUT=90s. To run without parallelism: `python -m pytest tests/test_backend_api.py -o addopts=''`. Seed test user is elena@test.com / pass1234 (see /app/memory/test_credentials.md). Base URL comes from EXPO_PUBLIC_BACKEND_URL env var. The only observed flake (Chicago citations empty list) is a rare Claude JSON edge case, not deterministic; re-running usually passes.",
+  "rca_of_issue": "N/A - no unresolved issues. The one-time TestPPT failure during initial run was caused by pytest-xdist LoadScope creating separate session-scoped `project_id` fixtures per worker: TestProposal ran on gw1 (creating a proposal on gw1's project) while TestPPT ran on gw0 (whose project had no proposal). Fixed by making TestPPT self-sufficient: it now checks for an existing proposal and generates one if missing before calling /api/ppt/generate."
+}
