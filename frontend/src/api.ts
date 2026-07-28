@@ -41,8 +41,15 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
   let body: any = null;
   try { body = text ? JSON.parse(text) : null; } catch { body = text; }
   if (!res.ok) {
-    const msg = (body && body.detail) || `Request failed (${res.status})`;
-    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    const detail = body && body.detail;
+    let msg: string;
+    if (typeof detail === 'string') msg = detail;
+    else if (detail && typeof detail === 'object' && detail.message) msg = detail.message;
+    else msg = `Request failed (${res.status})`;
+    const err: any = new Error(msg);
+    err.status = res.status;
+    err.detail = detail;
+    throw err;
   }
   return body as T;
 }
@@ -94,4 +101,12 @@ export const api = {
 
   chat: (project_id: string, question: string) =>
     request('/chat', { method: 'POST', body: JSON.stringify({ project_id, question }) }),
+
+  // Billing
+  billingPlans: () => request('/billing/plans'),
+  billingStatus: () => request('/billing/status'),
+  createSubscription: (tier: 'student' | 'pro') =>
+    request('/billing/subscription', { method: 'POST', body: JSON.stringify({ tier }) }),
+  cancelSubscription: (cancel_at_period_end = false) =>
+    request('/billing/cancel', { method: 'POST', body: JSON.stringify({ cancel_at_period_end }) }),
 };

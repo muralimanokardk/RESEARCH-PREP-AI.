@@ -120,7 +120,7 @@ export default function Home() {
                 <ActionTile testID="action-new-project" icon="add-circle" color={colors.brand} label="New Research" desc="Discover topics" onPress={() => router.push('/new-project')} />
                 <ActionTile testID="action-my-projects" icon="folder-open" color={colors.brandSecondary} label="My Projects" desc="Browse & continue" onPress={() => router.push('/(tabs)/projects')} />
                 <ActionTile testID="action-library" icon="library" color={colors.brandTertiary} label="Library" desc="Papers & reviews" onPress={() => router.push('/(tabs)/library')} />
-                <ActionTile testID="action-ask-stella" icon="sparkles" color={colors.brand} label="Ask Stella" desc="AI research tutor" onPress={() => router.push('/(tabs)/projects')} />
+                <ActionTile testID="action-upgrade" icon="rocket-outline" color={colors.brand} label="Upgrade" desc="See Student & Pro" onPress={() => router.push('/paywall')} />
               </View>
 
               {/* Mastery */}

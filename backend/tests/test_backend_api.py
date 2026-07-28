@@ -295,26 +295,15 @@ class TestCitations:
 
 # ---------- PPT ----------
 class TestPPT:
-    def test_generate_ppt(self, session, auth_headers, project_id, paper_ids):
-        # Ensure a proposal exists on this worker's project (xdist runs classes on separate workers)
-        proposal_check = session.get(f"{API}/projects/{project_id}/proposal", headers=auth_headers, timeout=20)
-        if proposal_check.status_code != 200 or proposal_check.json() is None:
-            gen = session.post(f"{API}/proposal/generate", json={
-                "project_id": project_id,
-                "selected_topic": "Parameter-efficient fine-tuning for low-resource languages"
-            }, headers=auth_headers, timeout=LLM_TIMEOUT)
-            assert gen.status_code == 200, gen.text
+    def test_generate_ppt_free_tier_paywalled(self, session, auth_headers, project_id, paper_ids):
+        """After Razorpay integration, PPT generation is Pro-only. Free tier must get 402."""
         r = session.post(f"{API}/ppt/generate", json={"project_id": project_id},
-                         headers=auth_headers, timeout=LLM_TIMEOUT)
-        assert r.status_code == 200, r.text
-        data = r.json()
-        slides = data.get("slides", [])
-        assert len(slides) == 10, f"Expected 10 slides, got {len(slides)}"
-        for s in slides:
-            assert "index" in s
-            assert "title" in s and s["title"]
-            assert isinstance(s.get("bullets"), list)
-            assert "notes" in s
+                         headers=auth_headers, timeout=30)
+        assert r.status_code == 402, r.text
+        detail = r.json().get("detail", {})
+        assert isinstance(detail, dict)
+        assert detail.get("error") == "upgrade_required"
+        assert detail.get("feature") == "ppt_unlock"
 
 
 # ---------- AI Chat (RAG) ----------

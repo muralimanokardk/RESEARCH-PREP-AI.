@@ -1,0 +1,51 @@
+{
+  "summary": "Backend regression + Razorpay billing integration testing for Research Prep AI. 16/16 new billing tests PASSED (100%) covering plan catalog, status, subscription creation with placeholder keys (503), cancel (401/404), webhook (503 with placeholder secret), feature gating on topics/generate (5/day quota → 6th call returns 402 quota_exceeded), and PPT paywall on free tier (402 upgrade_required). Also confirmed the db.usage collection is populated with feature='topic_gens_day' after topic gens. Ran full existing regression suite: 42/42 non-PPT tests still PASS. The previous TestPPT test was updated to expect 402 (paywall) instead of 200, since PPT is now Pro-only — this matches the review request note that 'PPT should now hit paywall gate on free tier - that's expected.' All new billing endpoints degrade gracefully with placeholder Razorpay keys (503 with detail message mentioning 'not configured' / 'Webhook secret not configured'). No React Native/frontend testing performed (backend-only per request).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "POST /api/billing/webhook",
+        "issue": "When webhook secret is placeholder, endpoint returns 503 BEFORE checking the X-Razorpay-Signature header. So requests without the signature header also get 503 (not 400). This is fine for the placeholder-key state, but once real secrets are configured, the current ordering (secret check → dedupe → signature check) is correct. Item flagged only because the review request checklist mentioned 'returns 400 when signature header is missing' — that condition is only reachable AFTER a real RAZORPAY_WEBHOOK_SECRET is set. Behavior is by design; no fix needed unless the checklist wording is strict."
+      },
+      {
+        "endpoint": "POST /api/papers/upload, POST /api/papers/text (side-effect on regression suite)",
+        "issue": "Free-tier paper_uploads_month quota is 3. The existing regression test suite (test_backend_api.py) reuses seed user elena@test.com and each full run adds 2 papers (paper_ids fixture + PDF upload test). After this iteration, elena@ is at 3/3 for the month. Any FUTURE regression run this month will fail at the paper_ids fixture with HTTP 402 quota_exceeded. Recommended: bump free-tier paper_uploads_month to something like 20 during dev, OR make the shared paper fixture use a fresh timestamped user, OR reset db.usage before each run."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_billing.py (new)",
+    "/app/backend/tests/test_backend_api.py (updated TestPPT to expect 402 paywall)",
+    "/app/test_reports/pytest/billing_results.xml"
+  ],
+  "action_items": [
+    "Regression side-effect: Increase FEATURE_QUOTAS['paper_uploads_month']['free'] from 3 to ~20 for dev, OR update conftest.py to spin up a fresh timestamped user per session so the shared elena@test.com doesn't exhaust monthly quotas across regression runs.",
+    "Consider adding a small admin/reset endpoint (dev-only, gated on env flag) to clear db.usage for a given user_id — makes CI regression cycles idempotent.",
+    "Optional hardening: In billing.py webhook handler, when placeholder secret is detected, also acknowledge missing signature header for a clearer 4xx-vs-5xx distinction once real keys land. Not blocking."
+  ],
+  "critical_code_review_comments": [
+    "billing.py:_client() raises HTTPException with status 503 correctly when keys contain 'placeholder' — good defensive check. However substring match 'placeholder' would also block any real key that happens to contain the word; acceptable for this environment.",
+    "billing.py require_quota(): only 'ppt_unlock' triggers the upgrade_required error branch when limit<=0 AND tier=='free'. If future tiers add other 0-limit features, the branch won't trigger for them — refactor to raise upgrade_required whenever limit <= 0 for ANY feature/tier combo, not only ppt_unlock. Minor.",
+    "billing.py webhook: uses razorpay.Client(auth=('k','k')).utility.verify_webhook_signature — creating a client with dummy creds is ugly. razorpay's Utility class can be instantiated directly (razorpay.utility.Utility(client)). Cosmetic.",
+    "server.py imports razorpay (via billing.py). If Razorpay ever fails to import, the whole app fails to boot. Consider a lazy import inside _client()/webhook so the app still serves non-billing routes if the razorpay package is missing. Low priority.",
+    "billing.py cancel(): 502 leaks raw exception message from razorpay (f'Razorpay error: {e}'). Could contain sensitive info. Wrap with a generic message. Low priority.",
+    "billing.py webhook: user_id in notes comes from client-provided data; there's no cross-check that the subscription actually belongs to that user. Since Razorpay owns the notes at creation time (server sets user_id from the current authenticated user), this is safe as long as the create_subscription flow is the only path that sets notes. Note it for future auditing.",
+    "server.py delete_project() still doesn't cascade db.usage entries — usage stays after project deletion. Low priority (usage is user-scoped, not project-scoped, so this is likely intentional)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_billing.py (created — 16 tests for billing + gating)",
+    "/app/backend/tests/test_backend_api.py (updated TestPPT.test_generate_ppt → test_generate_ppt_free_tier_paywalled: now asserts 402 upgrade_required, matching new paywall behavior)"
+  ],
+  "success_rate": {"backend": "100% (16/16 new billing tests + 42/42 existing non-PPT + 1/1 updated PPT test = 59/59)", "frontend": "not tested (backend-only request)"},
+  "seed_data_creation": "Billing tests create a fresh module-scoped user (billing_test_<timestamp>@test.com / pass1234) plus a TEST_Billing Project to isolate quota counters. These test users are not cleaned up (no delete-user endpoint) but are inert. Elena's usage collection now has topic_gens_day and paper_uploads_month entries — see minor issue #2 above.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run new billing tests with: `cd /app/backend && python -m pytest tests/test_billing.py -v -o addopts='' --tb=short`. Runtime ~110s (LLM calls for 5 topic gens dominate). Uses fresh timestamped user per module so quota tests are deterministic. Regression suite in test_backend_api.py now expects 402 on /ppt/generate (paywall). WARNING: elena@test.com's free-tier paper_uploads_month quota may already be exhausted for the current month — either bump the free quota or refactor conftest to use fresh users if you re-run full regression this month. Placeholder Razorpay keys in /app/backend/.env are intentional; endpoints correctly return 503. Once real keys arrive, the webhook signature-invalid (400) and signature-missing (400) branches will need re-testing.",
+  "rca_of_issue": "N/A — no unresolved defects. Two operational notes: (1) elena@'s paper quota exhausted after this session (3/3 for month); mitigate by seeding a fresh user or bumping free-tier paper_uploads_month during dev. (2) Webhook 400 conditions are unreachable until a real RAZORPAY_WEBHOOK_SECRET is configured; current 503 short-circuit is correct."
+}

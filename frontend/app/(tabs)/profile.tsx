@@ -11,6 +11,7 @@ export default function Profile() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [stats, setStats] = useState<any>(null);
+  const [billing, setBilling] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -18,8 +19,12 @@ export default function Profile() {
     try {
       const u = await getUser();
       setUser(u);
-      const s = await api.dashboardStats();
+      const [s, b] = await Promise.all([
+        api.dashboardStats(),
+        api.billingStatus().catch(() => null),
+      ]);
       setStats(s);
+      setBilling(b);
     } finally { setLoading(false); }
   };
   useFocusEffect(useCallback(() => { load(); }, []));
@@ -57,6 +62,27 @@ export default function Profile() {
             <GlassCard style={styles.statCard} radius={20}><Text style={styles.statVal}>{stats?.papers ?? 0}</Text><Text style={styles.statLabel}>Papers</Text></GlassCard>
             <GlassCard style={styles.statCard} radius={20}><Text style={styles.statVal}>{stats?.proposals ?? 0}</Text><Text style={styles.statLabel}>Proposals</Text></GlassCard>
           </View>
+
+          <Text style={styles.section}>Subscription</Text>
+          <Pressable
+            testID="subscription-row"
+            onPress={() => router.push(billing?.tier && billing.tier !== 'free' ? '/manage-subscription' : '/paywall')}
+          >
+            <GlassCard style={styles.subCard} radius={22}>
+              <View style={styles.subIcon}>
+                <Ionicons name={billing?.tier === 'pro' ? 'diamond' : billing?.tier === 'student' ? 'school' : 'leaf-outline'} size={22} color={colors.brand} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.subLabel} testID="profile-tier">
+                  {billing?.tier === 'pro' ? 'Research Pro' : billing?.tier === 'student' ? 'Student' : 'Free plan'}
+                </Text>
+                <Text style={styles.subHint}>
+                  {billing?.tier && billing.tier !== 'free' ? 'Tap to manage' : 'Upgrade for higher AI quotas & PPT export'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" color={colors.slate} size={18} />
+            </GlassCard>
+          </Pressable>
 
           <Text style={styles.section}>Settings</Text>
           <GlassCard style={{ padding: 0 }} radius={22}>
@@ -105,6 +131,10 @@ const styles = StyleSheet.create({
   roleChip: { alignSelf: 'flex-start', backgroundColor: colors.brandLight, paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.pill, marginTop: 8 },
   roleText: { fontFamily: font.family, color: colors.brand, fontSize: font.sizes.xs, fontWeight: font.weights.medium },
   section: { fontFamily: font.family, fontSize: font.sizes.lg, color: colors.ink, fontWeight: font.weights.medium, marginTop: spacing.xl, marginBottom: spacing.md },
+  subCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
+  subIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: colors.brandLight, alignItems: 'center', justifyContent: 'center' },
+  subLabel: { fontFamily: font.family, fontSize: font.sizes.base, color: colors.ink, fontWeight: font.weights.medium },
+  subHint: { fontFamily: font.family, fontSize: font.sizes.xs, color: colors.slate, marginTop: 2 },
   statsRow: { flexDirection: 'row', gap: spacing.md },
   statCard: { flex: 1, alignItems: 'center', padding: spacing.md },
   statVal: { fontFamily: font.family, fontSize: 22, color: colors.brand, fontWeight: font.weights.medium },

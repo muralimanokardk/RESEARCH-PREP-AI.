@@ -72,7 +72,13 @@ export default function Workspace() {
 
   const withBusy = async (key: string, fn: () => Promise<any>) => {
     setBusy(key); setError(null);
-    try { await fn(); } catch (e: any) { setError(e.message); }
+    try { await fn(); } catch (e: any) {
+      if (e.status === 402) {
+        router.push('/paywall');
+      } else {
+        setError(e.message);
+      }
+    }
     finally { setBusy(null); }
   };
 
@@ -112,7 +118,8 @@ export default function Workspace() {
       const paper = await api.uploadPaper(id, file.name, b64);
       setPapers((prev) => [paper, ...prev]);
     } catch (e: any) {
-      setError(e.message);
+      if (e.status === 402) router.push('/paywall');
+      else setError(e.message);
     } finally { setBusy(null); }
   };
 

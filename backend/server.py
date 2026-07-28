@@ -20,6 +20,7 @@ from datetime import datetime, timedelta, timezone
 
 import fitz  # PyMuPDF
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from billing import build_router as build_billing_router, require_quota
 
 # ---------------------------------------------------------------------------
 # Setup
@@ -427,6 +428,7 @@ async def generate_topics(body: TopicGenRequest, current=Depends(get_current_use
     project = await db.projects.find_one({"id": body.project_id, "user_id": current["id"]}, {"_id": 0})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    await require_quota(db, current["id"], "topic_gens_day")
     domain = body.domain or project["domain"]
     keywords = body.keywords or project.get("keywords", "")
     interest = body.interest or project.get("description", "")
@@ -477,6 +479,7 @@ async def upload_paper(body: PDFUploadPayload, current=Depends(get_current_user)
     proj = await db.projects.find_one({"id": body.project_id, "user_id": current["id"]})
     if not proj:
         raise HTTPException(status_code=404, detail="Project not found")
+    await require_quota(db, current["id"], "paper_uploads_month")
     import base64
     try:
         pdf_bytes = base64.b64decode(body.base64_data)
@@ -539,6 +542,7 @@ async def add_paper_text(body: PaperCreate, current=Depends(get_current_user)):
     proj = await db.projects.find_one({"id": body.project_id, "user_id": current["id"]})
     if not proj:
         raise HTTPException(status_code=404, detail="Project not found")
+    await require_quota(db, current["id"], "paper_uploads_month")
     text = body.text_content or ""
     if len(text) < 40:
         raise HTTPException(status_code=400, detail="Paste more text content to analyze")
@@ -691,6 +695,7 @@ async def generate_proposal(body: ProposalRequest, current=Depends(get_current_u
     proj = await db.projects.find_one({"id": body.project_id, "user_id": current["id"]}, {"_id": 0})
     if not proj:
         raise HTTPException(status_code=404, detail="Project not found")
+    await require_quota(db, current["id"], "proposal_gens_month")
     papers = [p async for p in db.papers.find({"project_id": body.project_id}, {"_id": 0})]
     gaps = await db.research_gaps.find_one({"project_id": body.project_id}, {"_id": 0})
     topic = body.selected_topic or proj["title"]
@@ -794,6 +799,7 @@ async def generate_ppt(body: PPTRequest, current=Depends(get_current_user)):
     proj = await db.projects.find_one({"id": body.project_id, "user_id": current["id"]}, {"_id": 0})
     if not proj:
         raise HTTPException(status_code=404, detail="Project not found")
+    await require_quota(db, current["id"], "ppt_unlock")
     proposal = await db.proposals.find_one({"project_id": body.project_id}, {"_id": 0})
     if not proposal:
         raise HTTPException(status_code=400, detail="Generate a proposal first")
@@ -841,6 +847,7 @@ async def chat_with_project(body: ChatRequest, current=Depends(get_current_user)
     proj = await db.projects.find_one({"id": body.project_id, "user_id": current["id"]}, {"_id": 0})
     if not proj:
         raise HTTPException(status_code=404, detail="Project not found")
+    await require_quota(db, current["id"], "chat_msgs_day")
     context = await retrieve_context(body.project_id, body.question, k=6)
     system = "You are Stella, a friendly academic research assistant. Answer using ONLY the provided context when possible, otherwise say you need more sources."
     prompt = f"""Context from user's uploaded papers:
@@ -856,6 +863,7 @@ Give a concise, well-structured answer (3-6 sentences)."""
 # Mount + CORS
 # ---------------------------------------------------------------------------
 app.include_router(api)
+app.include_router(build_billing_router(db, get_current_user))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

@@ -35,6 +35,8 @@ export default function RootLayout() {
           <Stack.Screen name="workspace/[id]" />
           <Stack.Screen name="chat/[id]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           <Stack.Screen name="paste-paper/[id]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="paywall" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="manage-subscription" />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>
