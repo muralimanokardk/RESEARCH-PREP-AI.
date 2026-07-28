@@ -1,0 +1,234 @@
+{
+  "app_name": "Research Prep AI",
+  "personality": "4 Tactile / Playful with 6 Glass / Luxe surfaces (Aurora Workspace Fusion)",
+  "personality_one_liner": "A bright, airy, and tactile glassmorphism environment that transforms heavy academic research into an approachable, frictionless flow using soft pastel auroras and layered depth.",
+  "color": {
+    "surface": "#F4F7FC",
+    "onSurface": "#111827",
+    "surfaceSecondary": "#FFFFFF",
+    "onSurfaceSecondary": "#6B7280",
+    "surfaceTertiary": "#E5EDF8",
+    "onSurfaceTertiary": "#374151",
+    "surfaceInverse": "#111827",
+    "onSurfaceInverse": "#F4F7FC",
+    "brand": "#7C3AED",
+    "brandPrimary": "#7C3AED",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#06B6D4",
+    "onBrandSecondary": "#FFFFFF",
+    "brandTertiary": "#10B981",
+    "onBrandTertiary": "#FFFFFF",
+    "success": "#10B981",
+    "onSuccess": "#FFFFFF",
+    "warning": "#F59E0B",
+    "onWarning": "#FFFFFF",
+    "error": "#EF4444",
+    "onError": "#FFFFFF",
+    "info": "#06B6D4",
+    "onInfo": "#FFFFFF",
+    "border": "#E5E7EB",
+    "borderStrong": "#D1D5DB",
+    "divider": "#F3F4F6"
+  },
+  "typography": {
+    "displayFontFamily": "Inter",
+    "textFontFamily": "Inter",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous padding around glass cards. Keep minimum 16pt margin between screen edges and cards. Safe area must be respected at screen root.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 24,
+    "pill": 999
+  },
+  "shadow_tier": "2",
+  "navigation": "bottom_tabs",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": "true",
+    "do's": [
+      "Use backdrop blur (expo-blur) heavily on surfaceSecondary cards with a rgba(255,255,255,0.7) tint.",
+      "Pin a frosted tab bar and sticky frosted header over the scrolling aurora background.",
+      "Apply a 1px rgba(255,255,255,0.4) border to all glass cards to define their edges.",
+      "Ensure text on glass uses onSurface (#111827) for high contrast."
+    ],
+    "dont's": [
+      "Do not blur form inputs or primary text regions.",
+      "Do not use dark shadows on glass; use a very soft, diffused shadow (shadow tier 2).",
+      "Do not stack more than two blur surfaces over each other."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-blur",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary (#FFFFFF)"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "haptics": {
+    "primary_button_press": "impactLight",
+    "tab_switch": "selection",
+    "glass_card_tap": "impactLight",
+    "topic_selection": "impactMedium",
+    "success_action": "notificationSuccess"
+  },
+  "screens": [
+    {
+      "name": "Landing_Onboarding",
+      "purpose": "Introduce the app, highlight research flow, and prompt login/registration.",
+      "states": {
+        "loading": "Spinner in center",
+        "empty": "N/A",
+        "error": "N/A"
+      },
+      "layout": "Full-bleed fixed `aurora_background_1`. Large center Mascot (`stella_mascot`), large display title (Inter, max weight 500), brief subtitle. Primary CTA 'Get Started' pinned at the bottom in a frosted glass container above the safe area."
+    },
+    {
+      "name": "Auth (Login / Register)",
+      "purpose": "Authenticate users via JWT email/password.",
+      "states": {
+        "loading": "Spinner on the button",
+        "empty": "N/A",
+        "error": "Frosted red error banner at the top"
+      },
+      "layout": "Fixed aurora background. Single large frosted `surfaceSecondary` card in the center containing the form. Labels above inputs. Inputs have solid `surfaceTertiary` backgrounds for contrast. Sticky submit button at bottom inside KeyboardAvoidingView."
+    },
+    {
+      "name": "Dashboard_Home",
+      "purpose": "High-level overview of user's research activity, mastery, and milestones.",
+      "states": {
+        "loading": "Skeleton frosted cards",
+        "empty": "Stella mascot + 'Start your first research project' primary CTA",
+        "error": "Error message with 'Retry' button inside a frosted card"
+      },
+      "layout": "Sticky frosted header with greeting. Scrolling body over aurora background. Top section: Activity line chart (smooth curves). Middle section: 2-column grid of KPI cards (Stats, delta badges). Bottom: Topic Mastery (radial rings) and Milestone Timeline. FAB at bottom right for 'New Project'."
+    },
+    {
+      "name": "Projects_List",
+      "purpose": "Workspace directory of all research projects.",
+      "states": {
+        "loading": "Skeleton list items",
+        "empty": "3D Folder illustration + 'No projects yet'",
+        "error": "Error fetching projects"
+      },
+      "layout": "List of horizontal frosted cards. Each card displays project title, last edited date, and status pill (`brandTertiary`). Floating Action Button for 'New Project' pinned above the frosted tab bar."
+    },
+    {
+      "name": "New_Project_Modal",
+      "purpose": "Capture initial domain and keywords to kick off Topic Discovery.",
+      "states": {
+        "loading": "Generating topics...",
+        "empty": "N/A",
+        "error": "Failed to generate"
+      },
+      "layout": "Bottom sheet (full-screen capability) with frosted glass header. Form inputs for Domain and Keywords. Sticky 'Generate Topics' primary button at bottom."
+    },
+    {
+      "name": "Topic_Generator",
+      "purpose": "Display AI-generated topics with scores so the user can select one.",
+      "states": {
+        "loading": "Stella mascot animated + 'AI is discovering topics...'",
+        "empty": "N/A",
+        "error": "Error card with retry"
+      },
+      "layout": "Horizontal snap carousel of tall frosted cards. Each card contains the Topic Title, Novelty Score (radial ring), Difficulty Score (pill), and suggested datasets. Sticky 'Select Topic' CTA at bottom."
+    },
+    {
+      "name": "Project_Workspace",
+      "purpose": "Central hub for a specific project, with tabs for Topics, Papers, Gaps, Proposal, Citations, PPT.",
+      "states": {
+        "loading": "Skeleton layout",
+        "empty": "Varies by active tab",
+        "error": "Error message"
+      },
+      "layout": "Sticky frosted header with project title and a top segmented control (scrollable horizontal pills) to switch between sub-views (Papers, Literature Review, Gaps, Proposal, Citations, PPT). Content below changes based on active segment."
+    },
+    {
+      "name": "PDF_Upload_Literature_Summary",
+      "purpose": "Upload PDFs and view AI-generated paper summaries and comparison matrix.",
+      "states": {
+        "loading": "Analyzing document...",
+        "empty": "Upload your first paper to get a summary.",
+        "error": "Upload failed"
+      },
+      "layout": "Top 40% shows PDF thumbnail / metadata (or an 'Upload PDF' dropzone). Bottom 60% is a scrollable frosted sheet containing Summary, Methodology, and a Comparison Matrix. Sticky 'Chat with PDF' input field pinned above the keyboard."
+    },
+    {
+      "name": "Proposal_Builder",
+      "purpose": "Multi-section editor for Title, Abstract, Problem Statement, Objectives.",
+      "states": {
+        "loading": "Generating sections...",
+        "empty": "Click generate to build proposal",
+        "error": "Generation failed"
+      },
+      "layout": "Vertical list of expandable frosted accordions for each section (Abstract, Methodology, etc.). Inside each is a text area. Sticky bottom bar with 'Export' and 'Generate PPT' actions."
+    },
+    {
+      "name": "Citations",
+      "purpose": "Generate and manage bibliography.",
+      "states": {
+        "loading": "Formatting...",
+        "empty": "No citations added",
+        "error": "Formatting error"
+      },
+      "layout": "Top row of frosted filter pills (IEEE, APA, MLA, Chicago). Below is a scrollable list of frosted cards containing formatted citation text. 'Copy All' primary CTA pinned at the bottom."
+    },
+    {
+      "name": "PPT_Preview",
+      "purpose": "Preview the 10-slide deck with speaker notes before exporting.",
+      "states": {
+        "loading": "Rendering slides...",
+        "empty": "No slides generated",
+        "error": "Render failed"
+      },
+      "layout": "Large 16:9 aspect ratio frosted card at the top displaying the active slide. Horizontal scroll below it for slide thumbnails. Bottom half contains a scrollable text area for Speaker Notes. 'Download PPTX' pinned at the bottom."
+    }
+  ],
+  "images": {
+    "aurora_background_1": {
+      "url": "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHw0fHxsaWdodCUyMHBhc3RlbCUyMGF1cm9yYSUyMGdyYWRpZW50JTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3ODUyMzc1MDd8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Soft pastel aurora gradient background with pink and blue hues"
+    },
+    "aurora_background_2": {
+      "url": "https://images.unsplash.com/photo-1614849286521-4c58b2f0ff15?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHwzfHxsaWdodCUyMHBhc3RlbCUyMGF1cm9yYSUyMGdyYWRpZW50JTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3ODUyMzc1MDd8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Soft violet and pink pastel aurora gradient"
+    },
+    "stella_mascot": {
+      "url": "https://images.unsplash.com/photo-1739513276707-04fb7eee06d1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHwyfHxjdXRlJTIwM0QlMjBjbGF5JTIwc3RhciUyMG1hc2NvdHxlbnwwfHx8fDE3ODUyMzc1MDd8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Cute 3D clay mascot sitting on a cloud"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the user's requested Aurora Glass/Pastel style: use the pastel aurora gradient images as fixed absolute backgrounds at the screen root, and overlay scrolling content wrapped in `expo-blur` cards.",
+    "Implement glassmorphism using `expo-blur` with a white tint (rgba(255,255,255,0.7)). Add a thin 1px border (`rgba(255,255,255,0.4)`) to all glass cards.",
+    "Cap font weights at 500 across the entire app. Use the Inter font family. Drive visual hierarchy strictly through font size (sm to 2xl) rather than weight.",
+    "Brand accents (Violet #7C3AED, Sky #06B6D4, Mint #10B981) were explicitly requested by the user and override the normal ban on these colors. Use them for active states, primary buttons, charts, and progress rings.",
+    "Include a 'Stella' mascot (3D clay style) in empty states, onboarding, and as a small floating AI chat trigger inside the project workspace.",
+    "Maintain strict touch target sizes (≥ 44pt) and ensure the safe area is respected at the root level, especially with the fixed background.",
+    "For the bottom tab navigation, use a frosted glass container that sits over the aurora background. Max 4 tabs: Home, Projects, Library, Profile.",
+    "Ensure all primary text placed over glass surfaces uses the high-contrast `onSurface` (#111827) color to maintain readability.",
+    "Use Phosphor icons with filled active states and outlined inactive states in the tab bar.",
+    "For charts (activity lines, topic rings), map the data traces to the brandPrimary, brandSecondary, and brandTertiary colors, employing smooth bezier curves."
+  ]
+}
