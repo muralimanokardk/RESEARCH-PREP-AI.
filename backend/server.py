@@ -384,6 +384,7 @@ async def delete_project(project_id: str, current=Depends(get_current_user)):
     await db.literature_reviews.delete_many({"project_id": project_id})
     await db.research_gaps.delete_many({"project_id": project_id})
     await db.proposals.delete_many({"project_id": project_id})
+    await db.presentations.delete_many({"project_id": project_id})
     return {"deleted": res.deleted_count}
 
 async def _touch_project(project_id: str):
@@ -778,7 +779,12 @@ async def generate_citations(body: CitationRequest, current=Depends(get_current_
 Papers:
 {paper_lines}"""
     data = await claude_json(system, prompt, max_tokens=2000)
-    return {"style": style, "citations": data.get("citations", [])}
+    cites = data.get("citations", []) if isinstance(data, dict) else []
+    if not cites:
+        # one retry with sharper instruction
+        data = await claude_json(system, prompt + "\n\nIMPORTANT: The 'citations' array must be non-empty.", max_tokens=2000)
+        cites = data.get("citations", []) if isinstance(data, dict) else []
+    return {"style": style, "citations": cites}
 
 # ---------------------------------------------------------------------------
 # PPT Generator
